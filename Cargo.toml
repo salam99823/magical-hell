@@ -1,0 +1,17 @@
+[package]
+name = "magical-hell"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["wayland"]
+wayland = ["bevy/wayland"]
+
+[dependencies]
+bevy = "0.15"
+bevy_rapier2d = "0.28"
+bevy-inspector-egui = "0.28"
+bevy_egui = "0.32"
+
+[dev-dependencies]
+bevy = { version = "0.15", features = ["dynamic_linking"] }
