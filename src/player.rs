@@ -8,7 +8,7 @@ pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Health(pub f32);
 
 #[derive(Component, Default)]
@@ -18,12 +18,9 @@ pub enum PlayerState {
     Run,
 }
 
-#[derive(Event)]
-pub struct PlayerEnemyCollisionEvent;
-
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PlayerEnemyCollisionEvent>().add_systems(
+        app.register_type::<Health>().add_systems(
             Update,
             (
                 handle_player_death,
@@ -37,7 +34,7 @@ impl Plugin for PlayerPlugin {
 
 fn handle_player_enemy_collision_events(
     mut player_query: Query<&mut Health, With<Player>>,
-    mut events: EventReader<PlayerEnemyCollisionEvent>,
+    mut events: EventReader<CollisionEvent>,
 ) {
     if player_query.is_empty() {
         return;
@@ -63,26 +60,24 @@ fn handle_player_death(
 }
 
 fn handle_player_input(
-    mut player_query: Query<(&mut Velocity, &mut PlayerState), With<Player>>,
+    mut player_query: Query<(&mut KinematicCharacterController, &mut PlayerState), With<Player>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     if player_query.is_empty() {
         return;
     }
 
-    for (mut vel, mut player_state) in &mut player_query {
-        let w_key = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]) as u32 as f32;
-        let d_key = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]) as u32 as f32;
-        let a_key =
-            -(keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]) as u32 as f32);
-        let s_key =
-            -(keyboard_input.any_pressed([KeyCode::KeyS, KeyCode::ArrowDown]) as u32 as f32);
+    for (mut controller, mut player_state) in &mut player_query {
+        let w_key = keyboard_input.pressed(KeyCode::KeyW) as u32 as f32;
+        let d_key = keyboard_input.pressed(KeyCode::KeyD) as u32 as f32;
+        let a_key = -(keyboard_input.pressed(KeyCode::KeyA) as u32 as f32);
+        let s_key = -(keyboard_input.pressed(KeyCode::KeyS) as u32 as f32);
 
-        let delta = Vec2::new(w_key + s_key, d_key + a_key).normalize();
+        let delta = Vec2::new(d_key + a_key, w_key + s_key).normalize();
 
-        vel.linvel = delta * PLAYER_SPEED;
+        controller.translation = Some(delta * PLAYER_SPEED);
 
-        *player_state = if vel.linvel != Vec2::ZERO {
+        *player_state = if delta.is_finite() {
             PlayerState::Run
         } else {
             PlayerState::Idle

@@ -52,7 +52,7 @@ fn update_cursor_position(
     camera_query: Query<(&Camera, &GlobalTransform), With<Camera>>,
 ) {
     if window_query.is_empty() || camera_query.is_empty() {
-        cursor_pos.0 = None;
+        return;
     }
 
     let (camera, camera_transform) = camera_query.single();

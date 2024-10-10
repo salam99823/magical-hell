@@ -39,7 +39,9 @@ impl Plugin for EnemyPlugin {
     }
 }
 
-fn despawn_dead_enemies(mut commands: Commands, enemy_query: Query<(&Enemy, Entity), With<Enemy>>) {
+type WithEnemy = (With<Enemy>, Without<Player>);
+
+fn despawn_dead_enemies(mut commands: Commands, enemy_query: Query<(&Enemy, Entity), WithEnemy>) {
     if enemy_query.is_empty() {
         return;
     }
@@ -53,16 +55,16 @@ fn despawn_dead_enemies(mut commands: Commands, enemy_query: Query<(&Enemy, Enti
 
 fn update_enemy_transform(
     player_query: Query<&Transform, With<Player>>,
-    mut enemy_query: Query<&mut Transform, (With<Enemy>, Without<Player>)>,
+    mut enemy_query: Query<(&mut KinematicCharacterController, &Transform), WithEnemy>,
 ) {
     if player_query.is_empty() || enemy_query.is_empty() {
         return;
     }
 
     let player_pos = player_query.single().translation;
-    for mut transform in enemy_query.iter_mut() {
-        let dir = (player_pos - transform.translation).normalize();
-        transform.translation += dir * ENEMY_SPEED;
+    for (mut controller, transform) in enemy_query.iter_mut() {
+        let dir = (player_pos - transform.translation).normalize() * ENEMY_SPEED;
+        controller.translation = Some(Vec2::new(dir.x, dir.y));
     }
 }
 
@@ -86,11 +88,12 @@ fn spawn_enemies(
         commands.spawn((
             RigidBody::Dynamic,
             Collider::cuboid(
-                TILE_H as f32 * SPRITE_SCALE_FACTOR / 2.0,
-                TILE_W as f32 * SPRITE_SCALE_FACTOR / 2.0,
+                TILE_H as f32 * SPRITE_SCALE_FACTOR / 6.0,
+                TILE_W as f32 * SPRITE_SCALE_FACTOR / 6.0,
             ),
-            Velocity::zero(),
             LockedAxes::ROTATION_LOCKED,
+            CollisionGroups::new(Group::GROUP_2, Group::GROUP_2 | Group::GROUP_1),
+            KinematicCharacterController::default(),
             SpriteBundle {
                 texture: handle.image.clone().unwrap(),
                 transform: Transform::from_translation(vec3(x, y, 1.0))
@@ -112,7 +115,7 @@ fn spawn_enemies(
 fn get_random_position_around(pos: Vec2) -> (f32, f32) {
     let mut rng = rand::thread_rng();
     let angle = rng.gen_range(0.0..PI * 2.0);
-    let dist = rng.gen_range(1000.0..5000.0);
+    let dist = rng.gen_range(500.0..750.0);
 
     let offset_x = angle.cos() * dist;
     let offset_y = angle.sin() * dist;

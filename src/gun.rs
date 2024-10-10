@@ -54,10 +54,8 @@ fn update_gun_transform(
     }
 
     let player_pos = player_query.single().translation.truncate();
-    let cursor_pos = match cursor_pos.0 {
-        Some(pos) => pos,
-        None => player_pos,
-    };
+    let cursor_pos = cursor_pos.0.unwrap_or(player_pos);
+
     let mut gun_transform = gun_query.single_mut();
 
     let angle = (player_pos.y - cursor_pos.y).atan2(player_pos.x - cursor_pos.x) + PI;
@@ -92,14 +90,14 @@ fn handle_gun_input(
     }
 
     let mut rng = rand::thread_rng();
-    let bullet_direction = gun_transform.local_x();
+    let bullet_direction = gun_transform.local_x().normalize();
     if gun_timer.0.elapsed_secs() >= BULLET_SPAWN_INTERVAL {
         gun_timer.0.reset();
 
         for _ in 0..NUM_BULLETS_PER_SHOT {
             commands.spawn((
                 RigidBody::Dynamic,
-                Collider::ball(5.0),
+                Collider::ball(3.0),
                 Velocity {
                     linvel: Vec2::new(
                         bullet_direction.x + rng.gen_range(-0.2..0.2),
@@ -107,7 +105,8 @@ fn handle_gun_input(
                     ) * BULLET_SPEED,
                     angvel: 0.0,
                 },
-                LockedAxes::ROTATION_LOCKED,
+                CollisionGroups::new(Group::GROUP_2, Group::GROUP_2),
+                SolverGroups::new(Group::GROUP_2, Group::GROUP_2),
                 SpriteBundle {
                     texture: handle.image.clone().unwrap(),
                     transform: Transform::from_xyz(gun_pos.x, gun_pos.y, 0.0)

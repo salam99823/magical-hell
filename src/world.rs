@@ -32,11 +32,12 @@ fn init_world(
     commands.spawn((
         RigidBody::Dynamic,
         Collider::cuboid(
-            TILE_H as f32 * SPRITE_SCALE_FACTOR / 2.0,
-            TILE_W as f32 * SPRITE_SCALE_FACTOR / 2.0,
+            TILE_H as f32 * SPRITE_SCALE_FACTOR / 4.0,
+            TILE_W as f32 * SPRITE_SCALE_FACTOR / 4.0,
         ),
-        Velocity::zero(),
         LockedAxes::ROTATION_LOCKED,
+        CollisionGroups::new(Group::GROUP_1, Group::GROUP_1),
+        KinematicCharacterController::default(),
         SpriteBundle {
             texture: handle.image.clone().unwrap(),
             transform: Transform::from_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
