@@ -1,16 +1,13 @@
-use resources::{CursorPosition, GlobalTextureAtlas};
-use std::f32::consts::PI;
-
-use bevy::math::{vec2, vec3};
-use bevy::prelude::*;
-use bevy::time::Stopwatch;
-use bevy::utils::Instant;
+use bevy::{prelude::*, time::Stopwatch, utils::Instant};
 use bevy_rapier2d::prelude::*;
 use rand::Rng;
 
-use crate::player::Player;
-use crate::GameState;
-use crate::*;
+use crate::{
+    player::Player,
+    resources::{CursorPosition, GlobalTextureAtlas},
+    world::GameEntity,
+    *,
+};
 
 pub struct GunPlugin;
 
@@ -49,40 +46,30 @@ fn update_gun_transform(
     player_query: Query<&Transform, With<Player>>,
     mut gun_query: Query<&mut Transform, (With<Gun>, Without<Player>)>,
 ) {
-    if player_query.is_empty() || gun_query.is_empty() {
-        return;
-    }
-
     let player_pos = player_query.single().translation.truncate();
     let cursor_pos = cursor_pos.0.unwrap_or(player_pos);
 
     let mut gun_transform = gun_query.single_mut();
 
-    let angle = (player_pos.y - cursor_pos.y).atan2(player_pos.x - cursor_pos.x) + PI;
+    let angle =
+        (player_pos.y - cursor_pos.y).atan2(player_pos.x - cursor_pos.x) - std::f32::consts::PI;
     gun_transform.rotation = Quat::from_rotation_z(angle);
 
-    let offset = 20.0;
-    let new_gun_pos = vec2(
-        player_pos.x + offset * angle.cos() - 5.0,
-        player_pos.y + offset * angle.sin() - 10.0,
+    gun_transform.translation = Vec3::new(
+        7.0 * angle.cos(),
+        7.0 * angle.sin(),
+        gun_transform.translation.z,
     );
-
-    gun_transform.translation = vec3(new_gun_pos.x, new_gun_pos.y, gun_transform.translation.z);
 }
 
 fn handle_gun_input(
     mut commands: Commands,
     time: Res<Time>,
-    mut gun_query: Query<(&Transform, &mut GunTimer), With<Gun>>,
+    mut gun_query: Query<(&GlobalTransform, &mut GunTimer), With<Gun>>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
-    handle: Res<GlobalTextureAtlas>,
+    assets: Res<GlobalTextureAtlas>,
 ) {
-    if gun_query.is_empty() {
-        return;
-    }
-
     let (gun_transform, mut gun_timer) = gun_query.single_mut();
-    let gun_pos = gun_transform.translation.truncate();
     gun_timer.0.tick(time.delta());
 
     if !mouse_button_input.pressed(MouseButton::Left) {
@@ -90,14 +77,15 @@ fn handle_gun_input(
     }
 
     let mut rng = rand::thread_rng();
-    let bullet_direction = gun_transform.local_x().normalize();
+    let bullet_direction = gun_transform.right().normalize();
+    let gun_pos = gun_transform.translation().truncate() + bullet_direction.xy() * 10.0;
     if gun_timer.0.elapsed_secs() >= BULLET_SPAWN_INTERVAL {
         gun_timer.0.reset();
 
         for _ in 0..NUM_BULLETS_PER_SHOT {
             commands.spawn((
-                RigidBody::Dynamic,
-                Collider::ball(3.0),
+                RigidBody::KinematicVelocityBased,
+                Collider::ball(2.0),
                 Velocity {
                     linvel: Vec2::new(
                         bullet_direction.x + rng.gen_range(-0.2..0.2),
@@ -106,19 +94,19 @@ fn handle_gun_input(
                     angvel: 0.0,
                 },
                 CollisionGroups::new(Group::GROUP_2, Group::GROUP_2),
-                SolverGroups::new(Group::GROUP_2, Group::GROUP_2),
                 SpriteBundle {
-                    texture: handle.image.clone().unwrap(),
+                    texture: assets.image.clone().unwrap(),
                     transform: Transform::from_xyz(gun_pos.x, gun_pos.y, 0.0)
                         .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
                     ..default()
                 },
                 TextureAtlas {
-                    layout: handle.layout.clone().unwrap(),
+                    layout: assets.layout.clone().unwrap(),
                     index: 16,
                 },
                 Bullet,
                 SpawnInstant(Instant::now()),
+                GameEntity,
             ));
         }
     }

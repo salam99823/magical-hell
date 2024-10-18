@@ -17,6 +17,7 @@ mod gui;
 mod gun;
 mod player;
 mod resources;
+mod utils;
 mod world;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]

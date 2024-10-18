@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+use crate::world::Health;
 use crate::GameState;
 use crate::*;
 
@@ -8,8 +9,6 @@ pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
-#[derive(Component, Reflect)]
-pub struct Health(pub f32);
 
 #[derive(Component, Default)]
 pub enum PlayerState {
@@ -20,7 +19,7 @@ pub enum PlayerState {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Health>().add_systems(
+        app.add_systems(
             Update,
             (
                 handle_player_death,
@@ -36,10 +35,6 @@ fn handle_player_enemy_collision_events(
     mut player_query: Query<&mut Health, With<Player>>,
     mut events: EventReader<CollisionEvent>,
 ) {
-    if player_query.is_empty() {
-        return;
-    }
-
     let mut health = player_query.single_mut();
     for _ in events.read() {
         health.0 -= ENEMY_DAMAGE;
@@ -50,12 +45,10 @@ fn handle_player_death(
     player_query: Query<&Health, With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if player_query.is_empty() {
-        return;
-    }
-    let health = player_query.single();
-    if health.0 <= 0.0 {
-        next_state.set(GameState::MainMenu);
+    for health in player_query.iter() {
+        if health.0 == 0 {
+            next_state.set(GameState::MainMenu);
+        }
     }
 }
 

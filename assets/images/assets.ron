@@ -1,0 +1,36 @@
+({
+  "player_image": Image (
+    path: "images/player.png",
+  ),
+  "player_layout": TextureAtlasLayout (
+    tile_size_x: 16,
+    tile_size_y: 16,
+    columns: 6,
+    rows: 1,
+  ),
+
+  "enemy_images": Folder (
+    path: "images/enemies"
+  ),
+  "enemy_layouts": Image (
+    path: "images/tree.png",
+    sampler: Nearest
+  ),
+
+  "array_texture": Image (
+    path: "images/array_texture.png",
+    array_texture_layers: 4
+  ),
+  "folder_untyped": Folder (
+    path: "images",
+  ),
+  "folder_typed": Folder (
+    path: "images",
+  ),
+  "files_untyped": Files (
+    paths: ["images/tree.png", "images/player.png"],
+  ),
+  "files_typed": Files (
+    paths: ["images/tree.png", "images/player.png"],
+  ),
+})

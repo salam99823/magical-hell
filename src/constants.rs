@@ -30,10 +30,10 @@ pub const ENEMY_SPEED: f32 = 1.0;
 // Gun
 pub const BULLET_SPAWN_INTERVAL: f32 = 0.2;
 pub const BULLET_TIME_SECS: f32 = 1.0;
-pub const BULLET_SPEED: f32 = 200.0;
+pub const BULLET_SPEED: f32 = 300.0;
 pub const BULLET_DAMAGE: f32 = 15.0;
 
-pub const NUM_BULLETS_PER_SHOT: u32 = 5;
+pub const NUM_BULLETS_PER_SHOT: u32 = 1;
 
 // Colors
 pub const BG_COLOR: (u8, u8, u8) = (197, 204, 184);
